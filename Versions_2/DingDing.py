@@ -4,12 +4,7 @@ import time
 import sched
 import datetime
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
 import configparser
-from Versions_2.twilioSendMessage import SendMessage
 
 config = configparser.ConfigParser(allow_no_value=False)
 config.read("dingding.cfg")
@@ -17,10 +12,7 @@ scheduler = sched.scheduler(time.time, time.sleep)
 go_hour = int(config.get("time", "go_hour"))
 back_hour = int(config.get("time", "back_hour"))
 directory = config.get("ADB", "directory")
-sender = config.get("email", "sender")
-psw = config.get("email", "psw")
-receive = config.get("email", "receive")
-screen_dir = config.get("screen", "screen_dir")
+is_debug = config.get("GLOBAL", "is_debug")
 
 
 # 打开钉钉，关闭钉钉封装为一个妆饰器函数
@@ -32,16 +24,16 @@ def with_open_close_dingding(func):
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
         # 确保完全启动，并且加载上相应按键
-        time.sleep(20)
-        print("open dingding success")
-        print("打开打卡界面")
+        time.sleep(15)
+        print("打开钉钉成功")
+        print("打开企业考勤界面")
         operation_list1 = [self.adbselect_work, self.adbselect_playcard]
         for operation in operation_list1:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
             time.sleep(2)
-        time.sleep(30)
-        print("open playcard success")
+        time.sleep(15)
+        print("打开企业考勤界面成功")
         # 包装函数
         func(self, *args, **kwargs)
         print("关闭钉钉")
@@ -49,7 +41,7 @@ def with_open_close_dingding(func):
         for operation in operation_list2:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
-        print("kill dingding success")
+        print("关闭钉钉成功")
 
     return wrapper
 
@@ -78,100 +70,35 @@ class DingDing:
         # 设备截屏保存到sdcard
         self.adbscreencap = '"%s\\adb" shell screencap -p sdcard/screen.png' % adb_dir
         # 传送到计算机
-        self.adbpull = '"%s\\adb" pull sdcard/screen.png %s' % (adb_dir, screen_dir)
+        # self.adbpull = '"%s\\adb" pull sdcard/screen.png %s' % (adb_dir, screen_dir)
         # 删除设备截屏
         self.adbrm_screencap = '"%s\\adb" shell rm -r sdcard/screen.png' % adb_dir
 
-    # 点亮屏幕 》》解锁 》》打开钉钉
-    def open_dingding(self):
-        operation_list = [self.adbpower, self.adbclear, self.adbopen_dingding]
-        for operation in operation_list:
-            process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
-            process.wait()
-        # 确保完全启动，并且加载上相应按键
-        time.sleep(20)
-        print("open dingding success")
-
-    # 返回桌面 》》 退出钉钉 》》 手机黑屏
-    def close_dingding(self):
-        operation_list = [self.adbback_index, self.adbkill_dingding, self.adbpower]
-        for operation in operation_list:
-            process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
-            process.wait()
-        print("kill dingding success")
-
     # 上班(极速打卡)
     @with_open_close_dingding
-    def goto_work(self, minute):
-        self.screencap()
-        # 发送短信（2 代表上班，1代表下班）
-        shotmessage = SendMessage(2).PlayCardSendMessage()
-        # 发送邮件
-        self.send_email(shotmessage, minute)
-        print("打卡成功")
-
-    # 打开打卡界面
-    def openplaycard_interface(self):
-        print("打开打卡界面")
-        operation_list = [self.adbselect_work, self.adbselect_playcard]
-        for operation in operation_list:
-            process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
-            process.wait()
-            time.sleep(2)
-        time.sleep(30)
-        print("open playcard success")
+    def goto_work(self):
+        if is_debug == 1:
+            operation_list = [self.adbclick_playcard]
+            for operation in operation_list:
+                process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
+                process.wait()
+                time.sleep(3)
+        else:
+            print(self.adbclick_playcard)
+        print("上班打卡成功")
 
     # 下班
     @with_open_close_dingding
-    def after_work(self, minute):
-        operation_list = [self.adbclick_playcard]
-        for operation in operation_list:
-            process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
-            process.wait()
-            time.sleep(3)
-        self.screencap()
-        shotmessage = SendMessage(1).PlayCardSendMessage()
-        self.send_email(shotmessage, minute)
-        print("afterwork playcard success")
-
-    # 截屏>> 发送到电脑 >> 删除手机中保存的截屏
-    def screencap(self):
-        operation_list = [self.adbscreencap, self.adbpull, self.adbrm_screencap]
-        for operation in operation_list:
-            process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
-            process.wait()
-        print("screencap to computer success")
-
-    # 发送邮件（QQ邮箱）
-    @staticmethod
-    def send_email(shotmessage, minute):
-        """
-        qq邮箱 需要先登录网页版，开启SMTP服务。获取授权码，
-        :return:
-        """
-        now_time = datetime.datetime.now().strftime("%H:%M:%S")
-        message = MIMEMultipart('related')
-        subject = now_time + '打卡' + '下次打卡随机分钟：' + str(minute)
-        message['Subject'] = subject
-        message['From'] = "日常打卡"
-        message['To'] = receive
-        body = '<html><body><h2>' + shotmessage + '</h2><img src="cid:imageid" alt="imageid"></body></html>'
-        content = MIMEText(body, 'html', 'utf-8')
-        message.attach(content)
-        file = open(screen_dir, "rb")
-        img_data = file.read()
-        file.close()
-        img = MIMEImage(img_data)
-        img.add_header('Content-ID', 'imageid')
-        message.attach(img)
-        try:
-            server = smtplib.SMTP_SSL("smtp.qq.com", 465)
-            server.login(sender, psw)
-            server.sendmail(sender, receive, message.as_string())
-            server.quit()
-            print("邮件发送成功")
-        except smtplib.SMTPException as e:
-            print(e)
+    def after_work(self):
+        if is_debug == 1:
+            operation_list = [self.adbclick_playcard]
+            for operation in operation_list:
+                process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
+                process.wait()
+                time.sleep(3)
+        else:
+            print(self.adbclick_playcard)
+        print("下班打卡成功")
 
 
 # 随机打卡时间段
@@ -187,7 +114,6 @@ def incode_loop(func, minute):
     :param minute: 随机分钟数
     :return: None
     """
-    print("邮件接收地址" + receive)
     # 判断时间当超过上班时间则打下班卡。否则则打上班卡。
     if go_hour <= datetime.datetime.now().hour < back_hour:
         # 用来分类上班和下班。作为参数传入任务调度
@@ -240,15 +166,15 @@ def is_weekend():
 if __name__ == "__main__":
     pass
     # ======formal
-    scheduler.enter(0, 0, incode_loop, (start_loop, random_minute(),))
-    scheduler.run()
+    # scheduler.enter(0, 0, incode_loop, (start_loop, random_minute(),))
+    # scheduler.run()
     # ====test
     # image = SendMessage(2).TailorImage("D:\\screen.png")
     # shotmessage = SendMessage(2).baidu_img_str(image)
     # print(shotmessage)
     # SendMessage(shotmessage)
     # SendMessage()
-    # dingding  = dingding(directory)
-    # dingding.goto_work(14)
+    dingding = DingDing(directory)
+    dingding.goto_work()
     # ==== weekend
-    # print(is_weekend())
+    print(is_weekend())

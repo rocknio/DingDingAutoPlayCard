@@ -65,8 +65,10 @@ class DingDing:
         self.adbselect_work = '"%s\\adb" shell input tap %s' % (adb_dir, config.get("position", "work_position"))
         # 点击考勤打卡
         self.adbselect_playcard = '"%s\\adb" shell input tap %s' % (adb_dir, config.get("position", "check_position"))
+        # 点击上班打卡
+        self.adbclick_goto_work_playcard = '"%s\\adb" shell input tap %s' % (adb_dir, config.get("position", "go_to_work_position"))
         # 点击下班打卡
-        self.adbclick_playcard = '"%s\\adb" shell input tap %s' % (adb_dir, config.get("position", "play_position"))
+        self.adbclick_after_work_playcard = '"%s\\adb" shell input tap %s' % (adb_dir, config.get("position", "after_position"))
         # 设备截屏保存到sdcard
         self.adbscreencap = '"%s\\adb" shell screencap -p sdcard/screen.png' % adb_dir
         # 传送到计算机
@@ -78,26 +80,26 @@ class DingDing:
     @with_open_close_dingding
     def goto_work(self):
         if is_debug != 1:
-            operation_list = [self.adbclick_playcard]
+            operation_list = [self.adbclick_goto_work_playcard]
             for operation in operation_list:
                 process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
                 process.wait()
                 time.sleep(3)
         else:
-            print(self.adbclick_playcard)
+            print(self.adbclick_goto_work_playcard)
         print("上班打卡成功")
 
     # 下班
     @with_open_close_dingding
     def after_work(self):
         if is_debug != 1:
-            operation_list = [self.adbclick_playcard]
+            operation_list = [self.adbclick_after_work_playcard]
             for operation in operation_list:
                 process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
                 process.wait()
                 time.sleep(3)
         else:
-            print(self.adbclick_playcard)
+            print(self.adbclick_after_work_playcard)
         print("下班打卡成功")
 
 

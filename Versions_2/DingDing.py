@@ -163,7 +163,7 @@ def start_loop():
 # 是否是周末
 def is_weekend():
     """
-    :return: if weekend return False else return True
+    :return: if weekend return True else return False
     """
     now_time = datetime.datetime.now().strftime("%w")
     if now_time == "6" or now_time == "0":

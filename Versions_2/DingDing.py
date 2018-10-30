@@ -145,6 +145,9 @@ def start_loop():
     判断上下班类型,确定上下班打卡时间
     :return: None
     """
+    if is_weekend():
+        ioloop.IOLoop.instance().call_later(60, start_loop)
+
     now_time = datetime.datetime.now()
     now_hour = now_time.hour
 

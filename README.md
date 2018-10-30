@@ -7,7 +7,5 @@
 
 参考资料：
 ----
-[https://github.com/Skyexu/TopSup](https://github.com/Skyexu/TopSup)
-----
 [https://github.com/mzlogin/awesome-adb](https://github.com/mzlogin/awesome-adb)
 ----

@@ -7,6 +7,9 @@ from tornado import ioloop
 import random
 import configparser
 import datetime
+from twilio_sms.twilio_sms_utils import send_sms
+
+__author__ = 'Neo'
 
 config = configparser.ConfigParser(allow_no_value=False)
 config.read("dingding.cfg")
@@ -141,11 +144,13 @@ def call_later_delay(func, hour, minute):
 
 def do_goto_work():
     DingDing(directory).goto_work()
+    send_sms("+8613883723200", "上班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 
 def do_after_work():
     DingDing(directory).after_work()
+    send_sms("+8613883723200", "下班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 

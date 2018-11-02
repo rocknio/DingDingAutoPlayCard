@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
+import logging.handlers
 import subprocess
 import time
 from tornado import ioloop
-import datetime
 import random
 import configparser
+import datetime
 
 config = configparser.ConfigParser(allow_no_value=False)
 config.read("dingding.cfg")
@@ -14,35 +16,55 @@ directory = config.get("ADB", "directory")
 is_debug = int(config.get("GLOBAL", "is_debug"))
 
 
+def init_logging():
+    """
+    日志文件设置
+    """
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    sh = logging.StreamHandler()
+    file_log = logging.handlers.TimedRotatingFileHandler('dingding.log', 'MIDNIGHT', 1, 0)
+    formatter = logging.Formatter(
+        '[%(asctime)s] [%(levelname)-7s] [%(module)s:%(filename)s-%(funcName)s-%(lineno)d] %(message)s')
+    sh.setFormatter(formatter)
+    file_log.setFormatter(formatter)
+
+    logger.addHandler(sh)
+    logger.addHandler(file_log)
+
+    logging.info("Current log level is : %s", logging.getLevelName(logger.getEffectiveLevel()))
+
+
 # 打开钉钉，关闭钉钉封装为一个妆饰器函数
 def with_open_close_dingding(func):
     def wrapper(self, *args, **kwargs):
-        print("打开钉钉")
+        logging.info("打开钉钉")
         operation_list = [self.adbpower, self.adbclear, self.adbopen_dingding]
         for operation in operation_list:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
         # 确保完全启动，并且加载上相应按键
         time.sleep(15)
-        print("打开钉钉成功")
-        print("打开企业考勤界面")
+        logging.info("打开钉钉成功")
+        logging.info("打开企业考勤界面")
         operation_list1 = [self.adbselect_work, self.adbselect_playcard]
         for operation in operation_list1:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
             time.sleep(2)
         time.sleep(15)
-        print("打开企业考勤界面成功")
+        logging.info("打开企业考勤界面成功")
 
         # 包装函数
         func(self, *args, **kwargs)
 
-        print("关闭钉钉")
+        logging.info("关闭钉钉")
         operation_list2 = [self.adbback_index, self.adbkill_dingding, self.adbpower]
         for operation in operation_list2:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
-        print("关闭钉钉成功")
+        logging.info("关闭钉钉成功")
 
     return wrapper
 
@@ -87,7 +109,7 @@ class DingDing:
                 time.sleep(3)
         else:
             print(self.adbclick_goto_work_playcard)
-        print("上班打卡成功")
+        logging.info("上班打卡成功")
 
     # 下班
     @with_open_close_dingding
@@ -100,7 +122,7 @@ class DingDing:
                 time.sleep(3)
         else:
             print(self.adbclick_after_work_playcard)
-        print("下班打卡成功")
+        logging.info("下班打卡成功")
 
 
 def get_tomorrow_call_time(hour, minute):
@@ -119,24 +141,31 @@ def call_later_delay(func, hour, minute):
 
 def do_goto_work():
     DingDing(directory).goto_work()
-    setup_after_work()
+    set_next_loop(60 * 60, start_loop)
 
 
 def do_after_work():
     DingDing(directory).after_work()
-    ioloop.IOLoop.instance().call_later(60 * 60, start_loop)
+    set_next_loop(60 * 60, start_loop)
 
 
 def setup_after_work():
     random_time = random.randint(5, 30)
     delay = abs(call_later_delay(get_today_call_time, back_hour, random_time))
-    ioloop.IOLoop.instance().call_later(delay, do_after_work)
+    time.sleep(delay)
+    do_after_work()
 
 
 def setup_goto_work():
     random_time = random.randint(30, 59)
     delay = abs(call_later_delay(get_today_call_time, go_hour, random_time))
-    ioloop.IOLoop.instance().call_later(delay, do_goto_work)
+    time.sleep(delay)
+    do_goto_work()
+
+
+def set_next_loop(delay_seconds, func):
+    logging.info("Call {} at {} seconds later: {}".format(func, delay_seconds, (datetime.datetime.now() + datetime.timedelta(seconds=delay_seconds)).strftime('%Y-%m-%d %H:%M:%S')))
+    ioloop.IOLoop.instance().call_later(delay_seconds, func)
 
 
 # 任务调度
@@ -146,7 +175,7 @@ def start_loop():
     :return: None
     """
     if is_weekend():
-        ioloop.IOLoop.instance().call_later(60, start_loop)
+        set_next_loop(60, start_loop)
 
     now_time = datetime.datetime.now()
     now_hour = now_time.hour
@@ -157,7 +186,7 @@ def start_loop():
     if now_hour == back_hour:
         setup_after_work()
     else:
-        ioloop.IOLoop.instance().call_later(60, start_loop)
+        set_next_loop(60, start_loop)
 
 
 # 是否是周末
@@ -174,6 +203,8 @@ def is_weekend():
 
 if __name__ == "__main__":
     try:
+        init_logging()
+
         ioloop.IOLoop.instance().call_later(1, start_loop)
         ioloop.IOLoop.instance().start()
     except Exception as err:

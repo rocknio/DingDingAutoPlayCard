@@ -6,15 +6,16 @@ __author__ = 'Neo'
 
 
 def send_sms(dest_no, content):
-    account_sid = "twilio account id"
-    auth_token = "twilio auth token"
+    account_sid = ""
+    auth_token = ""
+    src_no = ""
 
     try:
         client = Client(account_sid, auth_token)
 
         message = client.messages.create(
             to=dest_no,
-            from_="twilio sms number",
+            from_=src_no,
             body=content
         )
 

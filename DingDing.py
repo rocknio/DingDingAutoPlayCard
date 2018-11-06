@@ -47,8 +47,9 @@ def with_open_close_dingding(func):
         for operation in operation_list:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
+            time.sleep(2)
         # 确保完全启动，并且加载上相应按键
-        time.sleep(15)
+        time.sleep(25)
         logging.info("打开钉钉成功")
         logging.info("打开企业考勤界面")
         operation_list1 = [self.adbselect_work, self.adbselect_playcard]
@@ -56,7 +57,7 @@ def with_open_close_dingding(func):
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
             time.sleep(2)
-        time.sleep(15)
+        time.sleep(25)
         logging.info("打开企业考勤界面成功")
 
         # 包装函数
@@ -67,6 +68,7 @@ def with_open_close_dingding(func):
         for operation in operation_list2:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
+            time.sleep(2)
         logging.info("关闭钉钉成功")
 
     return wrapper
@@ -181,6 +183,7 @@ def start_loop():
     """
     if is_weekend():
         set_next_loop(60, start_loop)
+        return
 
     now_time = datetime.datetime.now()
     now_hour = now_time.hour
@@ -188,7 +191,7 @@ def start_loop():
     # 上班,小时对应，随机分钟对应
     if now_hour == go_hour:
         setup_goto_work()
-    if now_hour == back_hour:
+    elif now_hour == back_hour:
         setup_after_work()
     else:
         set_next_loop(60, start_loop)

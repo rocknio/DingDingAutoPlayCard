@@ -2,12 +2,14 @@
 import logging
 import logging.handlers
 import subprocess
+import sys
 import time
 from tornado import ioloop
 import random
 import configparser
 import datetime
-from twilio_sms.twilio_sms_utils import send_sms
+# from twilio_sms.twilio_sms_utils import send_sms
+from email_utils.email_utils import send_email
 
 __author__ = 'Neo'
 
@@ -146,13 +148,13 @@ def call_later_delay(func, hour, minute):
 
 def do_goto_work():
     DingDing(directory).goto_work()
-    send_sms("+8613883723200", "上班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    send_email("rocknio@qq.com", "上班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 
 def do_after_work():
     DingDing(directory).after_work()
-    send_sms("+8613883723200", "下班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    send_email("rocknio@qq.com", "下班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 
@@ -209,8 +211,19 @@ def is_weekend():
         return False
 
 
+def check_python_version():
+    if sys.version[:1] != '3':
+        return False
+    else:
+        return True
+
+
 if __name__ == "__main__":
     try:
+        if check_python_version() is False:
+            print('Please use python3 to run the program')
+            exit()
+
         init_logging()
 
         ioloop.IOLoop.instance().call_later(1, start_loop)

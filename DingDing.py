@@ -19,6 +19,7 @@ go_hour = int(config.get("time", "go_hour"))
 back_hour = int(config.get("time", "back_hour"))
 directory = config.get("ADB", "directory")
 is_debug = int(config.get("GLOBAL", "is_debug"))
+dest_email = config.get("email", 'dest_email')
 
 
 def init_logging():
@@ -148,13 +149,13 @@ def call_later_delay(func, hour, minute):
 
 def do_goto_work():
     DingDing(directory).goto_work()
-    send_email("rocknio@qq.com", "上班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    send_email(dest_email, "上班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 
 def do_after_work():
     DingDing(directory).after_work()
-    send_email("rocknio@qq.com", "下班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    send_email(dest_email, "下班打卡成功，打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 

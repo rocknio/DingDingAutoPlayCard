@@ -8,10 +8,10 @@ __author__ = 'Neo'
 
 def send_email(receiver, content):
     try:
-        mail_host = 'smtp.163.com'
-        mail_user = 'rocknio'
-        mail_pass = 'songyn28'
-        sender = 'rocknio@163.com'
+        mail_host = ''
+        mail_user = ''
+        mail_pass = ''
+        sender = ''
         receivers = [receiver]
 
         message = MIMEText('content', 'plain', 'utf-8')

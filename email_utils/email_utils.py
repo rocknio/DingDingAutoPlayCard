@@ -14,7 +14,7 @@ def send_email(receiver, content):
         sender = ''
         receivers = [receiver]
 
-        message = MIMEText('content', 'plain', 'utf-8')
+        message = MIMEText(content, 'plain', 'utf-8')
         message['Subject'] = content
         message['From'] = sender
         message['To'] = receivers[0]
@@ -24,7 +24,10 @@ def send_email(receiver, content):
         smtp_client.login(mail_user, mail_pass)
         resp = smtp_client.sendmail(sender, receivers, message.as_string())
         smtp_client.quit()
-        logging.info("Send Email = {}".format(resp))
+        if len(resp) == 0:
+            logging.info("Send Email OK")
+        else:
+            logging.error("Send Email Error! err = ".format(resp))
     except Exception as err:
         logging.error("Err = {}".format(err))
 

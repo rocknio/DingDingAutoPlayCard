@@ -30,14 +30,14 @@ def init_logging():
     logger.setLevel(logging.INFO)
 
     sh = logging.StreamHandler()
-    file_log = logging.handlers.TimedRotatingFileHandler('dingding.log', 'MIDNIGHT', 1, 0)
+    # file_log = logging.handlers.TimedRotatingFileHandler('dingding.log', 'MIDNIGHT', 1, 0)
     formatter = logging.Formatter(
         '[%(asctime)s] [%(levelname)-7s] [%(module)s:%(filename)s-%(funcName)s-%(lineno)d] %(message)s')
     sh.setFormatter(formatter)
-    file_log.setFormatter(formatter)
+    # file_log.setFormatter(formatter)
 
     logger.addHandler(sh)
-    logger.addHandler(file_log)
+    # logger.addHandler(file_log)
 
     logging.info("Current log level is : %s", logging.getLevelName(logger.getEffectiveLevel()))
 
@@ -102,15 +102,28 @@ class DingDing:
         # 设备截屏保存到sdcard
         self.adbscreencap = '"%s\\adb" shell screencap -p sdcard/screen.png' % adb_dir
         # 传送到计算机
-        # self.adbpull = '"%s\\adb" pull sdcard/screen.png %s' % (adb_dir, screen_dir)
+        self.adbpull = '"%s\\adb" pull sdcard/screen.png %s' % (adb_dir, ".\\screen_cap")
         # 删除设备截屏
         self.adbrm_screencap = '"%s\\adb" shell rm -r sdcard/screen.png' % adb_dir
 
-    # 上班(极速打卡)
+    # 上班
     @with_open_close_dingding
     def goto_work(self):
         if is_debug != 1:
             operation_list = [self.adbclick_goto_work_playcard]
+            for operation in operation_list:
+                process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
+                process.wait()
+                time.sleep(3)
+        else:
+            print(self.adbclick_goto_work_playcard)
+        logging.info("上班打卡成功")
+
+    # 极速打卡上下班
+    @with_open_close_dingding
+    def work_rapidly(self):
+        if is_debug != 1:
+            operation_list = [self.adbscreencap, self.adbpull, self.adbrm_screencap]
             for operation in operation_list:
                 process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
                 process.wait()
@@ -148,19 +161,19 @@ def call_later_delay(func, hour, minute):
 
 
 def do_goto_work():
-    DingDing(directory).goto_work()
+    DingDing(directory).work_rapidly()
     send_email(dest_email, "上班打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 
 def do_after_work():
-    DingDing(directory).after_work()
+    DingDing(directory).work_rapidly()
     send_email(dest_email, "下班打卡时间：" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     set_next_loop(60 * 60, start_loop)
 
 
 def setup_after_work():
-    random_time = random.randint(5, 30)
+    random_time = random.randint(0, 3)
     delay = abs(call_later_delay(get_today_call_time, back_hour, random_time))
     logging.info(">>> 将在{}打卡下班".format((datetime.datetime.now() + datetime.timedelta(seconds=delay)).strftime('%Y-%m-%d %H:%M:%S')))
     time.sleep(delay)
@@ -168,7 +181,7 @@ def setup_after_work():
 
 
 def setup_goto_work():
-    random_time = random.randint(30, 59)
+    random_time = random.randint(0, 10)
     delay = abs(call_later_delay(get_today_call_time, go_hour, random_time))
     logging.info("<<< 将在{}打卡上班".format((datetime.datetime.now() + datetime.timedelta(seconds=delay)).strftime('%Y-%m-%d %H:%M:%S')))
     time.sleep(delay)

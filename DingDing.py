@@ -173,7 +173,7 @@ def do_after_work():
 
 
 def setup_after_work():
-    random_time = random.randint(0, 3)
+    random_time = random.randint(0, 10)
     delay = abs(call_later_delay(get_today_call_time, back_hour, random_time))
     logging.info(">>> 将在{}打卡下班".format((datetime.datetime.now() + datetime.timedelta(seconds=delay)).strftime('%Y-%m-%d %H:%M:%S')))
     time.sleep(delay)
